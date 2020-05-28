@@ -1,4 +1,5 @@
 import subprocess
+import re
 from datetime import datetime
 
 def format_datetime(now):
@@ -12,6 +13,16 @@ def write_file(curr_timestamps, content):
     f.write(content)
     f.close()
 
+def get_file_content(file):
+    content = []
+
+    with open(file, 'r') as reader:
+        for line in reader.readlines():
+            row = re.sub('\n', '', line)
+            content.append(row)
+
+    return content
+
 def execute_shell(cmd):
     return subprocess.check_output(cmd, universal_newlines=True)
 
@@ -21,3 +32,9 @@ timestamps = format_datetime(datetime.now())
 
 create_file(timestamps)
 write_file(timestamps, ps)
+
+containers = get_file_content('containers_' + timestamps)
+
+for row in containers:
+    print(row)
+
