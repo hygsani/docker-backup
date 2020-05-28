@@ -34,7 +34,7 @@ def backup_container_to_image(container_ids, timestamps):
     for i, container_id in enumerate(container_ids):
         new_container_name = container_names[i] + '_' + timestamps
 
-        print('> committing container id:', container_id)
+        print('> committing container id: %s' % container_id)
         execute_shell(['docker', 'commit', '-p', container_id, new_container_name])
         print('> container id: %s has been committed to image: %s' % (container_id, new_container_name))
 
@@ -43,7 +43,7 @@ def backup_image_to_tar(container_ids, timestamps):
         new_image = container_names[i] + '_' + timestamps
         tar_file = new_image + '.tar'
 
-        print('> saving image repository:', new_image)
+        print('> saving image repository: %s' % new_image)
         execute_shell(['docker', 'save', '-o', tar_file, new_image])
         print('> image repository: %s has been saved to tar file: %s' % (new_image, tar_file))
 
@@ -54,6 +54,15 @@ def remove_container(container_ids):
         print('> container id: %s has been stopped' % container_id)
         execute_shell(['docker', 'container', 'rm', container_id])
         print('> container id: %s has been removed' % container_id)
+
+def run_container(container_ids, container_ports, host_ports, timestamps):
+    for i, container_id in enumerate(container_ids):
+        new_image = container_names[i] + '_' + timestamps
+
+        print('> try to running image repository: %s' % new_image)
+        execute_shell(['docker', 'run', '-p', container_ports[i] + ':' + host_ports[i], '-d', new_image])
+        print('> image repository: %s is running' % new_image)
+
 
 timestamps = format_datetime(datetime.now())
 ps_output = execute_shell(['docker', 'ps', '--format', '{{.ID}}|{{.Image}}|{{.Ports}}'])
@@ -70,12 +79,15 @@ containers = get_file_content('containers_' + timestamps)
 container_ids = []
 container_names = []
 container_ports = []
+host_ports = []
 
 for row in containers:
     container_ids.append(split_content(row)[0])
     container_names.append(split_content(row)[1].split('_')[0])
-    container_ports.append(split_content(row)[2])
+    container_ports.append(split_content(row)[2].split(':')[1].split('->')[0])
+    host_ports.append(split_content(row)[2].split(':')[1].split('->')[1])
 
 backup_container_to_image(container_ids, timestamps)
 backup_image_to_tar(container_ids, timestamps)
 remove_container(container_ids)
+run_container(container_ids, container_ports, host_ports, timestamps)
